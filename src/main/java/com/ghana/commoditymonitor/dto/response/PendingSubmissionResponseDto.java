@@ -1,17 +1,15 @@
 package com.ghana.commoditymonitor.dto.response;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
-@Getter
-@Setter
+@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class PriceRecordResponseDto {
+public class PendingSubmissionResponseDto {
     private Long id;
     private Long commodityId;
     private String commodityName;
@@ -23,8 +21,6 @@ public class PriceRecordResponseDto {
     private String source;
     private String status;
     private String submittedByUsername;
-    private String reviewedByUsername;
-    private OffsetDateTime reviewedAt;
-    private String rejectionReason;
+    private Long daysPending;
     private OffsetDateTime createdAt;
 }
