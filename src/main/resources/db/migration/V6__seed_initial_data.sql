@@ -28,7 +28,5 @@ INSERT INTO commodities (name, category, unit) VALUES
 ('Plantain', 'Fruits', 'bunch'),
 ('Groundnut', 'Legumes', 'kg');
 
--- Seed Default Admin User
--- Password Hash is a placeholder for BCrypt: $2a$10$placeholder
-INSERT INTO users (username, email, password_hash, role) VALUES 
-('admin', 'admin@commoditygh.com', '$2a$10$placeholder', 'ADMIN');
+-- Default admin is now handled by com.ghana.commoditymonitor.util.DataSeeder 
+-- using properties from application.yaml

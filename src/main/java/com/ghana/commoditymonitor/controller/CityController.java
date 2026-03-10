@@ -69,7 +69,7 @@ public class CityController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete a city", description = "Accessible by ADMIN only")
-    public ResponseEntity<ApiResponse<Void>> deleteCity(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCity(@PathVariable Long id) {
         log.info("REST request to delete city with id: {}", id);
         cityService.deleteCity(id);
         return ResponseEntity.noContent().build();

@@ -1,5 +1,7 @@
 package com.ghana.commoditymonitor.dto.response.analytics;
 
+import com.ghana.commoditymonitor.enums.Direction;
+
 import java.math.BigDecimal;
 
 /**
@@ -11,5 +13,5 @@ public record InflationTrendDto(
     BigDecimal currentMonthAvg,
     BigDecimal lastMonthAvg,
     BigDecimal percentageChange,
-    String direction // UP, DOWN, STABLE
+    Direction direction
 ) {}

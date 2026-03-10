@@ -78,7 +78,7 @@ public class PriceRecordController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete a price record", description = "Accessible by ADMIN only")
-    public ResponseEntity<ApiResponse<Void>> deletePriceRecord(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePriceRecord(@PathVariable Long id) {
         log.info("REST request to delete price record with id: {}", id);
         priceRecordService.deletePriceRecord(id);
         return ResponseEntity.noContent().build();

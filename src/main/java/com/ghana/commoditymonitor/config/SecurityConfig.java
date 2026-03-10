@@ -32,6 +32,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger UI & OpenAPI docs
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                         "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                         // Public Endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/commodities/**", "/api/v1/cities/**", 

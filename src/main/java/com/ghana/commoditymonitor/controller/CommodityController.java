@@ -69,7 +69,7 @@ public class CommodityController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete a commodity", description = "Accessible by ADMIN only")
-    public ResponseEntity<ApiResponse<Void>> deleteCommodity(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCommodity(@PathVariable Long id) {
         log.info("REST request to delete commodity with id: {}", id);
         commodityService.deleteCommodity(id);
         return ResponseEntity.noContent().build();

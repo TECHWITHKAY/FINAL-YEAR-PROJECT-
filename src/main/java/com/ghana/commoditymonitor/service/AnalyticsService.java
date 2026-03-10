@@ -1,6 +1,7 @@
 package com.ghana.commoditymonitor.service;
 
 import com.ghana.commoditymonitor.dto.response.analytics.*;
+import com.ghana.commoditymonitor.enums.Direction;
 import com.ghana.commoditymonitor.exception.ResourceNotFoundException;
 import com.ghana.commoditymonitor.repository.CommodityRepository;
 import jakarta.persistence.EntityManager;
@@ -174,10 +175,10 @@ public class AnalyticsService {
         BigDecimal change = current.subtract(last).divide(last, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
 
-        String direction = change.compareTo(BigDecimal.ONE) > 0 ? "UP" : 
-                          (change.compareTo(BigDecimal.valueOf(-1)) < 0 ? "DOWN" : "STABLE");
+        Direction direction = change.compareTo(BigDecimal.ONE) > 0 ? Direction.UP :
+                             (change.compareTo(BigDecimal.valueOf(-1)) < 0 ? Direction.DOWN : Direction.STABLE);
 
-        return Optional.of(new InflationTrendDto(commodityId, name, current.setScale(2, RoundingMode.HALF_UP), 
+        return Optional.of(new InflationTrendDto(commodityId, name, current.setScale(2, RoundingMode.HALF_UP),
                 last.setScale(2, RoundingMode.HALF_UP), change.setScale(2, RoundingMode.HALF_UP), direction));
     }
 
