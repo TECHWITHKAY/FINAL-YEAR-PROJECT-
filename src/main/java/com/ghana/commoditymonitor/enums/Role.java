@@ -5,5 +5,7 @@ package com.ghana.commoditymonitor.enums;
  */
 public enum Role {
     ADMIN,
-    VIEWER
+    VIEWER,
+    FIELD_AGENT,
+    ANALYST
 }

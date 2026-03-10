@@ -2,6 +2,8 @@ package com.ghana.commoditymonitor.controller;
 
 import com.ghana.commoditymonitor.dto.response.ApiResponse;
 import com.ghana.commoditymonitor.dto.response.analytics.*;
+import com.ghana.commoditymonitor.security.CurrentUser;
+import com.ghana.commoditymonitor.security.UserPrincipal;
 import com.ghana.commoditymonitor.service.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +16,21 @@ import java.util.List;
 
 /**
  * Controller for statistical and trend analytics.
+ * <p>
+ * All endpoints support optional authentication via @CurrentUser annotation.
+ * Example usage:
+ * <pre>
+ * {@code
+ * @GetMapping("/trends/{id}")
+ * public ResponseEntity<?> getTrend(@PathVariable Long id,
+ *                                    @CurrentUser UserPrincipal principal) {
+ *     // principal is null for guests, populated for authenticated users
+ *     // Service layer can provide different data based on authentication status
+ *     return ResponseEntity.ok(analyticsService.getTrend(id, principal));
+ * }
+ * }
+ * </pre>
+ * </p>
  */
 @Slf4j
 @RestController
@@ -25,11 +42,13 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
     @GetMapping("/trends/{commodityId}")
-    @Operation(summary = "Get monthly price trend", description = "Returns average prices grouped by month")
+    @Operation(summary = "Get monthly price trend", description = "Returns average prices grouped by month. Supports optional authentication.")
     public ResponseEntity<ApiResponse<List<MonthlyTrendDto>>> getMonthlyPriceTrend(
             @PathVariable Long commodityId, 
-            @RequestParam(defaultValue = "12") int months) {
-        log.info("REST request to get monthly price trend for commodity: {} over {} months", commodityId, months);
+            @RequestParam(defaultValue = "12") int months,
+            @CurrentUser UserPrincipal principal) {
+        log.info("REST request to get monthly price trend for commodity: {} over {} months (user: {})", 
+                 commodityId, months, principal != null ? principal.username() : "guest");
         return ResponseEntity.ok(ApiResponse.ok(analyticsService.getMonthlyPriceTrend(commodityId, months)));
     }
 

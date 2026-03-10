@@ -32,20 +32,26 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Swagger UI & OpenAPI docs
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
                                          "/v3/api-docs/**", "/swagger-resources/**").permitAll()
-                        // Public Endpoints
+
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/commodities/**", "/api/v1/cities/**", 
-                                        "/api/v1/markets/**", "/api/v1/analytics/**").permitAll()
+                        .requestMatchers("/api/v1/public/**").permitAll()
+                        .requestMatchers("/api/v1/health/**").permitAll()
+                        .requestMatchers("/api/v1/seasonal/**").permitAll()
+                        .requestMatchers("/api/v1/analytics/**").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/commodities/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/cities/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/markets/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/price-records/**").permitAll()
                         
-                        // Protected Endpoints
+
                         .requestMatchers(HttpMethod.POST, "/api/v1/price-records/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/price-records/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/price-records/**").hasRole("ADMIN")
                         
-                        // Fallback
+
                         .anyRequest().authenticated()
                 );
 
