@@ -291,8 +291,8 @@ public class PublicDashboardService {
             JOIN markets m ON pr.market_id = m.id
             JOIN cities ci ON m.city_id = ci.id
             WHERE pr.status = 'APPROVED'
-              AND (:commodityId IS NULL OR pr.commodity_id = :commodityId)
-              AND (:cityId IS NULL OR ci.id = :cityId)
+              AND (CAST(:commodityId AS bigint) IS NULL OR pr.commodity_id = :commodityId)
+              AND (CAST(:cityId AS bigint) IS NULL OR ci.id = :cityId)
               AND pr.recorded_date >= CURRENT_DATE - INTERVAL ':daysBack days'
             ORDER BY pr.commodity_id, pr.market_id, pr.recorded_date DESC
             LIMIT :limit
@@ -342,7 +342,7 @@ public class PublicDashboardService {
             LEFT JOIN cities ci ON m.city_id = ci.id
             WHERE pr.commodity_id = :commodityId
               AND pr.status = 'APPROVED'
-              AND (:cityId IS NULL OR m.city_id = :cityId)
+              AND (CAST(:cityId AS bigint) IS NULL OR m.city_id = :cityId)
               AND pr.recorded_date >= CURRENT_DATE - INTERVAL ':daysBack days'
             GROUP BY c.name, c.unit, ci.name
             """.replace(":daysBack", String.valueOf(daysBack));
