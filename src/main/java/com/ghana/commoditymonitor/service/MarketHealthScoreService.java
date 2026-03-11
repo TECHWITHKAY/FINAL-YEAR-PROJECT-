@@ -21,6 +21,7 @@ import java.math.RoundingMode;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,11 +71,16 @@ public class MarketHealthScoreService {
         
         List<Long> marketIds = marketRepository.findAll().stream()
                 .map(Market::getId)
-                .collect(Collectors.toList());
+                .toList();
 
-        List<MarketHealthScore> scores = marketIds.stream()
-                .map(this::computeScoreForMarket)
-                .collect(Collectors.toList());
+        List<MarketHealthScore> scores = new ArrayList<>();
+        for (Long marketId : marketIds) {
+            try {
+                scores.add(computeScoreForMarket(marketId));
+            } catch (ResourceNotFoundException e) {
+                log.warn("Market {} disappeared during recomputation — skipping.", marketId);
+            }
+        }
 
         long duration = System.currentTimeMillis() - startTime;
         log.info("Health score computed for {} markets in {}ms", scores.size(), duration);

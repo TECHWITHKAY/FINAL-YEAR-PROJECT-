@@ -13,10 +13,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GuestDashboardDto {
-    private Integer totalCommoditiesTracked;
-    private Integer totalMarketsTracked;
-    private Integer totalCitiesTracked;
-    private OffsetDateTime lastDataUpdateAt;
+    private Integer totalCommodities;
+    private Integer totalMarkets;
+    private Integer totalCities;
+    private OffsetDateTime lastUpdated;
     private List<CommoditySummaryDto> topThreeCommoditiesByNationalAvgPrice;
     private String dataGateMessage;
 }

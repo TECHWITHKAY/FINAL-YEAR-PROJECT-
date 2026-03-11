@@ -16,7 +16,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.*;
 
 @Slf4j
@@ -53,11 +55,20 @@ public class AnalyticsService {
         List<MonthlyTrendDto> response = new ArrayList<>();
 
         for (Object[] row : results) {
-            Timestamp ts = (Timestamp) row[2];
+            Object monthObj = row[2];
+            LocalDateTime ldt;
+            if (monthObj instanceof Timestamp) {
+                ldt = ((Timestamp) monthObj).toLocalDateTime();
+            } else if (monthObj instanceof java.time.Instant) {
+                ldt = LocalDateTime.ofInstant((java.time.Instant) monthObj, java.time.ZoneId.systemDefault());
+            } else {
+                ldt = ((Timestamp) monthObj).toLocalDateTime(); // Fallback
+            }
+
             response.add(new MonthlyTrendDto(
                     ((Number) row[0]).longValue(),
                     (String) row[1],
-                    YearMonth.from(ts.toLocalDateTime()),
+                    YearMonth.from(ldt),
                     BigDecimal.valueOf(((Number) row[3]).doubleValue()).setScale(2, RoundingMode.HALF_UP)
             ));
         }

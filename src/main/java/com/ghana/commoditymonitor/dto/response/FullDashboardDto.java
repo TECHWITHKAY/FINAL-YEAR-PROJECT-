@@ -15,10 +15,10 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FullDashboardDto {
-    private Integer totalCommoditiesTracked;
-    private Integer totalMarketsTracked;
-    private Integer totalCitiesTracked;
-    private OffsetDateTime lastDataUpdateAt;
+    private Integer totalCommodities;
+    private Integer totalMarkets;
+    private Integer totalCities;
+    private OffsetDateTime lastUpdated;
     private List<CommoditySummaryDto> topThreeCommoditiesByNationalAvgPrice;
     private String dataGateMessage;
     
@@ -26,5 +26,5 @@ public class FullDashboardDto {
     private List<CommodityMovementDto> topFallingCommodities;
     private List<VolatilityDto> mostVolatileCommodities;
     private Map<String, Long> marketHealthSummary;
-    private Long pendingSubmissionsCount;
+    private Long pendingCount;
 }

@@ -85,10 +85,10 @@ public class PublicDashboardService {
                 .collect(Collectors.toList());
 
         return GuestDashboardDto.builder()
-                .totalCommoditiesTracked(((Number) counts[0]).intValue())
-                .totalMarketsTracked(((Number) counts[1]).intValue())
-                .totalCitiesTracked(((Number) counts[2]).intValue())
-                .lastDataUpdateAt(counts[3] != null ? 
+                .totalCommodities(((Number) counts[0]).intValue())
+                .totalMarkets(((Number) counts[1]).intValue())
+                .totalCities(((Number) counts[2]).intValue())
+                .lastUpdated(counts[3] != null ? 
                     ((java.sql.Date) counts[3]).toLocalDate().atStartOfDay().atOffset(java.time.ZoneOffset.UTC) : null)
                 .topThreeCommoditiesByNationalAvgPrice(topCommodities)
                 .dataGateMessage("Sign in to access full price history, city breakdowns, and export tools.")
@@ -105,17 +105,17 @@ public class PublicDashboardService {
         Long pendingCount = principal.isAdmin() ? getPendingSubmissionsCount() : null;
 
         return FullDashboardDto.builder()
-                .totalCommoditiesTracked(guestData.getTotalCommoditiesTracked())
-                .totalMarketsTracked(guestData.getTotalMarketsTracked())
-                .totalCitiesTracked(guestData.getTotalCitiesTracked())
-                .lastDataUpdateAt(guestData.getLastDataUpdateAt())
+                .totalCommodities(guestData.getTotalCommodities())
+                .totalMarkets(guestData.getTotalMarkets())
+                .totalCities(guestData.getTotalCities())
+                .lastUpdated(guestData.getLastUpdated())
                 .topThreeCommoditiesByNationalAvgPrice(guestData.getTopThreeCommoditiesByNationalAvgPrice())
                 .dataGateMessage(null)
                 .topRisingCommodities(topRising)
                 .topFallingCommodities(topFalling)
                 .mostVolatileCommodities(mostVolatile)
                 .marketHealthSummary(healthSummary)
-                .pendingSubmissionsCount(pendingCount)
+                .pendingCount(pendingCount)
                 .build();
     }
 
@@ -151,7 +151,7 @@ public class PublicDashboardService {
             JOIN previous_month pm ON cm.commodity_id = pm.commodity_id
             JOIN commodities c ON cm.commodity_id = c.id
             WHERE pm.avg_price > 0
-            ORDER BY pct_change """ + (rising ? "DESC" : "ASC") + """
+            ORDER BY pct_change """ + (rising ? " DESC " : " ASC ") + """
             LIMIT 3
             """;
 
@@ -258,7 +258,7 @@ public class PublicDashboardService {
         summary.put("F", 0L);
 
         for (Object[] row : results) {
-            String grade = (String) row[0];
+            String grade = row[0].toString();
             Long count = ((Number) row[1]).longValue();
             summary.put(grade, count);
         }
@@ -275,6 +275,36 @@ public class PublicDashboardService {
     public List<LatestPriceDto> getLatestPrices(Long commodityId, Long cityId, Integer limit, UserPrincipal principal) {
         int daysBack = (principal == null) ? 7 : 30;
         
+        // If no specific filters, return national average per commodity to avoid duplicates on dashboard
+        if (commodityId == null && cityId == null) {
+            String nationalSql = """
+                SELECT 
+                    pr.commodity_id,
+                    c.name AS commodity_name,
+                    c.unit,
+                    NULL AS market_id,
+                    'National Average' AS market_name,
+                    'Ghana' AS city_name,
+                    AVG(pr.price) AS price,
+                    MAX(pr.recorded_date) AS recorded_date,
+                    0 AS days_ago
+                FROM price_records pr
+                JOIN commodities c ON pr.commodity_id = c.id
+                WHERE pr.status = 'APPROVED'
+                  AND pr.recorded_date >= CURRENT_DATE - INTERVAL ':daysBack days'
+                GROUP BY pr.commodity_id, c.name, c.unit
+                ORDER BY price DESC
+                LIMIT :limit
+                """.replace(":daysBack", String.valueOf(daysBack));
+
+            Query query = entityManager.createNativeQuery(nationalSql);
+            query.setParameter("limit", limit);
+            
+            @SuppressWarnings("unchecked")
+            List<Object[]> results = query.getResultList();
+            return mapToLatestPriceDtos(results);
+        }
+
         String sql = """
             SELECT DISTINCT ON (pr.commodity_id, pr.market_id)
                 pr.commodity_id,
@@ -306,13 +336,17 @@ public class PublicDashboardService {
         @SuppressWarnings("unchecked")
         List<Object[]> results = query.getResultList();
 
+        return mapToLatestPriceDtos(results);
+    }
+
+    private List<LatestPriceDto> mapToLatestPriceDtos(List<Object[]> results) {
         return results.stream()
                 .map(row -> new LatestPriceDto(
                         ((Number) row[0]).longValue(),
                         (String) row[1],
                         (String) row[2],
-                        principal != null ? ((Number) row[3]).longValue() : null,
-                        principal != null ? (String) row[4] : null,
+                        row[3] != null ? ((Number) row[3]).longValue() : null,
+                        (String) row[4],
                         (String) row[5],
                         BigDecimal.valueOf(((Number) row[6]).doubleValue()).setScale(2, RoundingMode.HALF_UP),
                         ((java.sql.Date) row[7]).toLocalDate(),

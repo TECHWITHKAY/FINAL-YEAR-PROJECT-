@@ -93,6 +93,7 @@ public class SeasonalPatternService {
         List<Object[]> results = query.getResultList();
 
         seasonalPatternRepository.deleteAllByCommodityId(commodityId);
+        seasonalPatternRepository.flush(); // Ensure deletion is committed before insertion
 
         List<SeasonalPattern> patterns = results.stream()
                 .map(row -> SeasonalPattern.builder()
@@ -119,9 +120,13 @@ public class SeasonalPatternService {
 
         int computed = 0;
         for (Long commodityId : commodityIds) {
-            List<SeasonalPattern> patterns = computePatternsForCommodity(commodityId);
-            if (!patterns.isEmpty()) {
-                computed++;
+            try {
+                List<SeasonalPattern> patterns = computePatternsForCommodity(commodityId);
+                if (!patterns.isEmpty()) {
+                    computed++;
+                }
+            } catch (ResourceNotFoundException e) {
+                log.warn("Commodity {} disappeared during recomputation — skipping.", commodityId);
             }
         }
 
