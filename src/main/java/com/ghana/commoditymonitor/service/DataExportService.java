@@ -57,13 +57,15 @@ public class DataExportService {
             throw new BusinessRuleException("End date cannot be before start date");
         }
 
-        List<PriceRecord> records = fetchFilteredRecords(dto);
-
-        if (records.size() > MAX_EXPORT_ROWS) {
+        // Count first to avoid OOM on large datasets
+        long totalCount = countFilteredRecords(dto);
+        if (totalCount > MAX_EXPORT_ROWS) {
             throw new BusinessRuleException(
-                String.format("Export exceeds %,d rows. Please apply filters.", MAX_EXPORT_ROWS)
+                String.format("Export exceeds %,d rows (%,d matched). Please apply filters.", MAX_EXPORT_ROWS, totalCount)
             );
         }
+
+        List<PriceRecord> records = fetchFilteredRecords(dto);
 
         byte[] data;
         String filename;
@@ -87,6 +89,37 @@ public class DataExportService {
         return new ExportResult(data, filename, contentType, records.size());
     }
 
+    private long countFilteredRecords(ExportRequestDto dto) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<PriceRecord> root = countQuery.from(PriceRecord.class);
+        countQuery.select(cb.count(root));
+        countQuery.where(buildFilterPredicates(cb, root, dto).toArray(new Predicate[0]));
+        return entityManager.createQuery(countQuery).getSingleResult();
+    }
+
+    private List<Predicate> buildFilterPredicates(CriteriaBuilder cb, Root<PriceRecord> root, ExportRequestDto dto) {
+        List<Predicate> predicates = new ArrayList<>();
+        predicates.add(cb.equal(root.get("status"), com.ghana.commoditymonitor.enums.PriceRecordStatus.APPROVED));
+
+        if (dto.commodityId() != null) {
+            predicates.add(cb.equal(root.get("commodity").get("id"), dto.commodityId()));
+        }
+        if (dto.marketId() != null) {
+            predicates.add(cb.equal(root.get("market").get("id"), dto.marketId()));
+        }
+        if (dto.cityId() != null) {
+            predicates.add(cb.equal(root.get("market").get("city").get("id"), dto.cityId()));
+        }
+        if (dto.fromDate() != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("recordedDate"), dto.fromDate()));
+        }
+        if (dto.toDate() != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("recordedDate"), dto.toDate()));
+        }
+        return predicates;
+    }
+
     private List<PriceRecord> fetchFilteredRecords(ExportRequestDto dto) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<PriceRecord> query = cb.createQuery(PriceRecord.class);
@@ -96,31 +129,7 @@ public class DataExportService {
         root.fetch("market", JoinType.LEFT);
         root.fetch("submittedBy", JoinType.LEFT);
 
-        List<Predicate> predicates = new ArrayList<>();
-
-        predicates.add(cb.equal(root.get("status"), com.ghana.commoditymonitor.enums.PriceRecordStatus.APPROVED));
-
-        if (dto.commodityId() != null) {
-            predicates.add(cb.equal(root.get("commodity").get("id"), dto.commodityId()));
-        }
-
-        if (dto.marketId() != null) {
-            predicates.add(cb.equal(root.get("market").get("id"), dto.marketId()));
-        }
-
-        if (dto.cityId() != null) {
-            predicates.add(cb.equal(root.get("market").get("city").get("id"), dto.cityId()));
-        }
-
-        if (dto.fromDate() != null) {
-            predicates.add(cb.greaterThanOrEqualTo(root.get("recordedDate"), dto.fromDate()));
-        }
-
-        if (dto.toDate() != null) {
-            predicates.add(cb.lessThanOrEqualTo(root.get("recordedDate"), dto.toDate()));
-        }
-
-        query.where(predicates.toArray(new Predicate[0]));
+        query.where(buildFilterPredicates(cb, root, dto).toArray(new Predicate[0]));
         query.orderBy(
             cb.desc(root.get("recordedDate")),
             cb.asc(root.get("commodity").get("name"))
@@ -338,7 +347,6 @@ public class DataExportService {
         return style;
     }
 
-    @Transactional
     private void saveExportLog(ExportRequestDto dto, UserPrincipal principal, 
                                String ipAddress, int rowCount, long fileSize) {
         try {

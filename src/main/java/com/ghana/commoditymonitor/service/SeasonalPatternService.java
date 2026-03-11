@@ -36,11 +36,6 @@ public class SeasonalPatternService {
     private final PriceRecordRepository priceRecordRepository;
     private final EntityManager entityManager;
 
-    private static final String[] MONTH_NAMES = {
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    };
-
     @Transactional
     public List<SeasonalPattern> computePatternsForCommodity(Long commodityId) {
         log.info("Computing seasonal patterns for commodity: {}", commodityId);
@@ -214,9 +209,12 @@ public class SeasonalPatternService {
                 .multiply(new BigDecimal("100"))
                 .setScale(1, RoundingMode.HALF_UP);
 
+        String monthName = java.time.Month.of(currentMonth)
+                .getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH);
+
         String message = buildOutlookMessage(
                 currentPattern.getCommodity().getName(),
-                MONTH_NAMES[currentMonth - 1],
+                monthName,
                 outlook,
                 percentageFromAverage.abs()
         );
@@ -224,7 +222,7 @@ public class SeasonalPatternService {
         return new SeasonalOutlookDto(
                 commodityId,
                 currentPattern.getCommodity().getName(),
-                MONTH_NAMES[currentMonth - 1],
+                monthName,
                 index,
                 outlook,
                 percentageFromAverage,
@@ -234,12 +232,15 @@ public class SeasonalPatternService {
 
     private SeasonalPatternDto mapToDto(SeasonalPattern pattern) {
         SeasonalOutlook interpretation = determineOutlook(pattern.getSeasonalIndex());
+        
+        String monthName = java.time.Month.of(pattern.getMonthOfYear())
+                .getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH);
 
         return new SeasonalPatternDto(
                 pattern.getCommodity().getId(),
                 pattern.getCommodity().getName(),
                 pattern.getMonthOfYear().intValue(),
-                MONTH_NAMES[pattern.getMonthOfYear() - 1],
+                monthName,
                 pattern.getAvgPrice(),
                 pattern.getSeasonalIndex(),
                 interpretation,

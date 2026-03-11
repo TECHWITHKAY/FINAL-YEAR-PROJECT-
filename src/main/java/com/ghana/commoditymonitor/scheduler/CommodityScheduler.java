@@ -32,26 +32,36 @@ public class CommodityScheduler {
     @Scheduled(cron = "0 0 2 * * *")
     public void refreshMarketHealthScores() {
         log.info("Starting scheduled market health score refresh");
-        long startTime = System.currentTimeMillis();
+        try {
+            long startTime = System.currentTimeMillis();
 
-        List<com.ghana.commoditymonitor.entity.MarketHealthScore> scores = 
-                marketHealthScoreService.computeAllMarketScores();
-        
-        long elapsed = System.currentTimeMillis() - startTime;
-        log.info("Market health scores refreshed for {} markets in {}ms", scores.size(), elapsed);
+            List<com.ghana.commoditymonitor.entity.MarketHealthScore> scores = 
+                    marketHealthScoreService.computeAllMarketScores();
+            
+            long elapsed = System.currentTimeMillis() - startTime;
+            log.info("Market health scores refreshed for {} markets in {}ms", scores.size(), elapsed);
+        } catch (Exception e) {
+            log.error("Failed to refresh market health scores", e);
+        }
 
-        OffsetDateTime cutoffDate = OffsetDateTime.now().minusDays(90);
-        marketHealthScoreRepository.deleteByComputedAtBefore(cutoffDate);
-        log.debug("Deleted market health scores older than 90 days");
+        try {
+            OffsetDateTime cutoffDate = OffsetDateTime.now().minusDays(90);
+            marketHealthScoreRepository.deleteByComputedAtBefore(cutoffDate);
+            log.debug("Deleted market health scores older than 90 days");
+        } catch (Exception e) {
+            log.error("Failed to cleanup old market health scores", e);
+        }
     }
 
     @Scheduled(cron = "0 0 3 1 * *")
     public void refreshSeasonalPatterns() {
         log.info("Starting scheduled seasonal pattern recomputation");
-        
-        seasonalPatternService.computeAllPatterns();
-        
-        log.info("Seasonal patterns recomputed for all commodities");
+        try {
+            seasonalPatternService.computeAllPatterns();
+            log.info("Seasonal patterns recomputed for all commodities");
+        } catch (Exception e) {
+            log.error("Failed to recompute seasonal patterns", e);
+        }
     }
 
     @Scheduled(cron = "0 0 * * * *")
@@ -60,10 +70,8 @@ public class CommodityScheduler {
         
         OffsetDateTime slaThreshold = OffsetDateTime.now().minusHours(24);
         
-        List<PriceRecord> pendingRecords = priceRecordRepository.findAll().stream()
-                .filter(pr -> pr.getStatus() == PriceRecordStatus.PENDING)
-                .filter(pr -> pr.getCreatedAt() != null && pr.getCreatedAt().isBefore(slaThreshold))
-                .toList();
+        List<PriceRecord> pendingRecords = priceRecordRepository
+                .findByStatusAndCreatedAtBefore(PriceRecordStatus.PENDING, slaThreshold);
 
         for (PriceRecord record : pendingRecords) {
             long hoursPending = Duration.between(record.getCreatedAt(), OffsetDateTime.now()).toHours();
@@ -83,8 +91,9 @@ public class CommodityScheduler {
     public void evictDashboardCache() {
         log.debug("Evicting dashboardSummary cache");
         
-        if (cacheManager.getCache("dashboardSummary") != null) {
-            cacheManager.getCache("dashboardSummary").clear();
+        var cache = cacheManager.getCache("dashboardSummary");
+        if (cache != null) {
+            cache.clear();
             log.debug("dashboardSummary cache evicted");
         }
     }

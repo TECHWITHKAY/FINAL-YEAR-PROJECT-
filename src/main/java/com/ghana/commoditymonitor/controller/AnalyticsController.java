@@ -1,6 +1,7 @@
 package com.ghana.commoditymonitor.controller;
 
 import com.ghana.commoditymonitor.dto.response.ApiResponse;
+import com.ghana.commoditymonitor.dto.response.DataQualityReportDto;
 import com.ghana.commoditymonitor.dto.response.analytics.*;
 import com.ghana.commoditymonitor.security.CurrentUser;
 import com.ghana.commoditymonitor.security.UserPrincipal;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -82,5 +84,15 @@ public class AnalyticsController {
         return analyticsService.getMovingAverageForecast(commodityId)
                 .map(res -> ResponseEntity.ok(ApiResponse.ok(res)))
                 .orElse(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/data-quality")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
+    @Operation(summary = "Get data quality report", 
+               description = "Comprehensive data quality analysis for administrators and analysts")
+    public ResponseEntity<ApiResponse<DataQualityReportDto>> getDataQualityReport() {
+        log.info("REST request to generate data quality report");
+        DataQualityReportDto report = analyticsService.generateDataQualityReport();
+        return ResponseEntity.ok(ApiResponse.ok(report));
     }
 }
