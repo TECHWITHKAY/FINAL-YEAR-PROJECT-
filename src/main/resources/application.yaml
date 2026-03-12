@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:postgresql://127.0.0.1:5432/commodities_gh
     username: postgres
-    password: ${DB_PASSWORD:masters123}
+    password: ${DB_PASSWORD}
 
   flyway:
     enabled: true
