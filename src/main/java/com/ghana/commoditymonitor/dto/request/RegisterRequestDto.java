@@ -22,6 +22,5 @@ public record RegisterRequestDto(
     @Email(message = "Invalid email format")
     String email,
 
-    @NotNull(message = "Role is required")
     Role role
 ) {}

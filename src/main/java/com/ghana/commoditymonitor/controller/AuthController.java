@@ -39,8 +39,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Register a new user", description = "Creates a new user account. Only accessible by ADMIN.")
+    @Operation(summary = "Register a new user", description = "Creates a new user account.")
     public ResponseEntity<ApiResponse<JwtResponseDto>> register(@Valid @RequestBody RegisterRequestDto request) {
         log.info("REST request to register user: {}", request.username());
         JwtResponseDto response = authService.register(request);

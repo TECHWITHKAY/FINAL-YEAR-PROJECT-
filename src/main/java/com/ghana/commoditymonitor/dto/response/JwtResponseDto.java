@@ -16,4 +16,5 @@ public class JwtResponseDto {
     private String username;
     private Role role;
     private Long expiresIn;
+    private boolean active;
 }

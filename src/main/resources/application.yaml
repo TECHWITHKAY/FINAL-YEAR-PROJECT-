@@ -23,6 +23,18 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 jwt:
   secret: ${JWT_SECRET:secretKeyForDevelopmentOnlyValueMustBeLongerThan256Bits}
   expiration: 86400000 # 24h in milliseconds
@@ -37,6 +49,10 @@ cors:
 
 app:
   admin:
-    username: ${ADMIN_USERNAME:admin}
-    password: ${ADMIN_PASSWORD:admin123}
+    username: ${ADMIN_USERNAME}
+    password: ${ADMIN_PASSWORD}
     email: ${ADMIN_EMAIL:admin@commoditygh.com}
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+  frontend:
+    base-url: ${FRONTEND_URL:http://localhost:5173}

@@ -4,6 +4,7 @@ import com.ghana.commoditymonitor.dto.request.AuthRequestDto;
 import com.ghana.commoditymonitor.dto.request.RegisterRequestDto;
 import com.ghana.commoditymonitor.dto.response.JwtResponseDto;
 import com.ghana.commoditymonitor.entity.User;
+import com.ghana.commoditymonitor.enums.Role;
 import com.ghana.commoditymonitor.exception.DuplicateResourceException;
 import com.ghana.commoditymonitor.repository.UserRepository;
 import com.ghana.commoditymonitor.security.JwtTokenProvider;
@@ -52,11 +53,12 @@ public class AuthService {
                 .username(user.getUsername())
                 .role(user.getRole())
                 .expiresIn(86400000L) // 24 hours in ms
+                .active(true)
                 .build();
     }
 
     /**
-     * Register a new user (restricted logic should be applied in controller or security config).
+     * Register a new user.
      */
     @Transactional
     public JwtResponseDto register(RegisterRequestDto request) {
@@ -70,19 +72,36 @@ public class AuthService {
             throw new DuplicateResourceException("Email is already in use!");
         }
 
+        // Default to VIEWER for public signup if no role is provided.
+        Role role = request.role() != null ? request.role() : Role.VIEWER;
+        
+        // FIELD_AGENT accounts require manual activation by an admin.
+        // Other roles (VIEWER, ANALYST) can log in immediately.
+        boolean isActive = (role != Role.FIELD_AGENT);
+        
         User user = User.builder()
                 .username(request.username())
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .role(request.role())
-                .active(true)
+                .role(role)
+                .active(isActive)
                 .build();
 
         userRepository.save(user);
+        
+        log.info("User {} saved. Active: {}", user.getUsername(), isActive);
 
-        // Auto-login after registration or just return success? 
-        // Request says "authenticate, generate JWT token" for login, but for register it just says "register ADMIN only (check existing user)".
-        // Returning a login response for convenience.
-        return login(new AuthRequestDto(request.username(), request.password()));
+        if (!isActive) {
+            return JwtResponseDto.builder()
+                    .username(user.getUsername())
+                    .role(user.getRole())
+                    .active(false)
+                    .build();
+        }
+
+        // Auto-login only if active
+        JwtResponseDto response = login(new AuthRequestDto(request.username(), request.password()));
+        response.setActive(true);
+        return response;
     }
 }

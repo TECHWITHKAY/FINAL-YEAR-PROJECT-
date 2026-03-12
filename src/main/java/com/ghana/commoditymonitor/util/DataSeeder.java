@@ -54,7 +54,7 @@ public class DataSeeder implements CommandLineRunner {
     @Value("${app.admin.email}")
     private String adminEmail;
 
-    private static final boolean FORCE_RESEED = true; // Set to true to bypass count checks
+    private static final boolean FORCE_RESEED = false; // Set to true to bypass count checks
 
     @Override
     public void run(String... args) throws Exception {
@@ -63,7 +63,7 @@ public class DataSeeder implements CommandLineRunner {
             return null;
         });
 
-        long approvedCount = priceRecordRepository.countByStatus(PriceRecordStatus.APPROVED);
+        long priceRecordCount = priceRecordRepository.count();
         if (FORCE_RESEED) {
             log.info("FORCE_RESEED is enabled. Performing NUCLEAR WIPE for a clean start...");
             transactionTemplate.execute(status -> {
@@ -83,7 +83,8 @@ public class DataSeeder implements CommandLineRunner {
             });
             
             generateMassivePriceRecords();
-        } else if (approvedCount < 100000) {
+        } else if (priceRecordCount < 100000) {
+            log.info("Insufficient price records found. Starting fresh seeding...");
             transactionTemplate.execute(status -> {
                 seedMarketData();
                 return null;
