@@ -18,4 +18,7 @@ public interface CommodityRepository extends JpaRepository<Commodity, Long> {
     Optional<Commodity> findByName(String name);
 
     boolean existsByName(String name);
+
+    @org.springframework.data.jpa.repository.Query("SELECT c.id FROM Commodity c")
+    List<Long> findAllIds();
 }

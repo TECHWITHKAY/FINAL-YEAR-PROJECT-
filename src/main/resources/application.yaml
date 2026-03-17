@@ -9,6 +9,13 @@ spring:
     url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      max-lifetime: 600000        # 10 minutes — well under Render's idle timeout
+      keepalive-time: 120000      # 2 minutes — keeps connections alive
+      connection-timeout: 30000   # 30 seconds
+      idle-timeout: 300000        # 5 minutes
 
   flyway:
     enabled: true
@@ -16,12 +23,16 @@ spring:
     baseline-on-migrate: true
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+        order_inserts: true
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
@@ -54,5 +65,7 @@ app:
     email: ${ADMIN_EMAIL:admin@commoditygh.com}
   mail:
     enabled: ${MAIL_ENABLED:false}
+  seed:
+    recompute-on-startup: true
   frontend:
     base-url: ${FRONTEND_URL:http://localhost:5173}

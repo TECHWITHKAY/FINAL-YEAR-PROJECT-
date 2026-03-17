@@ -69,9 +69,7 @@ public class MarketHealthScoreService {
     public List<MarketHealthScore> computeAllMarketScores() {
         long startTime = System.currentTimeMillis();
         
-        List<Long> marketIds = marketRepository.findAll().stream()
-                .map(Market::getId)
-                .toList();
+        List<Long> marketIds = marketRepository.findAllIds();
 
         List<MarketHealthScore> scores = new ArrayList<>();
         for (Long marketId : marketIds) {
@@ -79,6 +77,8 @@ public class MarketHealthScoreService {
                 scores.add(computeScoreForMarket(marketId));
             } catch (ResourceNotFoundException e) {
                 log.warn("Market {} disappeared during recomputation — skipping.", marketId);
+            } finally {
+                entityManager.clear();
             }
         }
 

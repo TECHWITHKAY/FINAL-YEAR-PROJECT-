@@ -43,9 +43,7 @@ public class SeasonalPatternService {
         Commodity commodity = commodityRepository.findById(commodityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Commodity", "id", commodityId));
 
-        long totalRecords = priceRecordRepository.findByCommodityId(commodityId).stream()
-                .filter(pr -> pr.getStatus() != null && "APPROVED".equals(pr.getStatus().name()))
-                .count();
+        long totalRecords = priceRecordRepository.countByCommodityIdAndStatus(commodityId, com.ghana.commoditymonitor.enums.PriceRecordStatus.APPROVED);
 
         if (totalRecords < 12) {
             log.warn("Insufficient data for commodity {}: only {} approved records (minimum 12 required)", 
@@ -114,9 +112,7 @@ public class SeasonalPatternService {
     public void computeAllPatterns() {
         long startTime = System.currentTimeMillis();
         
-        List<Long> commodityIds = commodityRepository.findAll().stream()
-                .map(Commodity::getId)
-                .collect(Collectors.toList());
+        List<Long> commodityIds = commodityRepository.findAllIds();
 
         int computed = 0;
         for (Long commodityId : commodityIds) {
@@ -127,6 +123,8 @@ public class SeasonalPatternService {
                 }
             } catch (ResourceNotFoundException e) {
                 log.warn("Commodity {} disappeared during recomputation — skipping.", commodityId);
+            } finally {
+                entityManager.clear();
             }
         }
 

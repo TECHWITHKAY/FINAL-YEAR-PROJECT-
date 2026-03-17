@@ -28,6 +28,8 @@ public interface PriceRecordRepository extends JpaRepository<PriceRecord, Long> 
     List<PriceRecord> findByStatusAndCreatedAtBefore(PriceRecordStatus status, java.time.OffsetDateTime threshold);
 
     long countByStatus(PriceRecordStatus status);
+    
+    long countByCommodityIdAndStatus(Long commodityId, PriceRecordStatus status);
 
     @Query("SELECT pr FROM PriceRecord pr " +
            "JOIN FETCH pr.market m " +

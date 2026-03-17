@@ -13,18 +13,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import jakarta.persistence.EntityManager;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.util.*;
 
 /**
  * Utility class to seed initial data on application startup.
- * Specifically handles creating the initial administrator user if one doesn't exist.
+ * Uses JDBC batch inserts for price records to handle remote DB connections reliably.
  */
 @Component
 @RequiredArgsConstructor
@@ -43,7 +46,7 @@ public class DataSeeder implements CommandLineRunner {
     private final MarketHealthScoreService marketHealthScoreService;
     private final SeasonalPatternService seasonalPatternService;
     private final TransactionTemplate transactionTemplate;
-    private final EntityManager entityManager;
+    private final DataSource dataSource;
 
     @Value("${app.admin.username}")
     private String adminUsername;
@@ -54,7 +57,11 @@ public class DataSeeder implements CommandLineRunner {
     @Value("${app.admin.email}")
     private String adminEmail;
 
+    @Value("${app.seed.recompute-on-startup:true}")
+    private boolean recomputeOnStartup;
+
     private static final boolean FORCE_RESEED = false; // Set to true to bypass count checks
+    private static final int JDBC_BATCH_SIZE = 500;
 
     @Override
     public void run(String... args) throws Exception {
@@ -94,10 +101,23 @@ public class DataSeeder implements CommandLineRunner {
             log.info("Sufficient data exists. Skipping seeding.");
         }
         
-        log.info("Triggering recomputation of health scores and seasonal patterns...");
-        marketHealthScoreService.computeAllMarketScores();
-        seasonalPatternService.computeAllPatterns();
-        log.info("Recomputation complete. Dashboards should now be fully populated.");
+        if (recomputeOnStartup) {
+            log.info("Triggering recomputation of health scores and seasonal patterns...");
+            try {
+                marketHealthScoreService.computeAllMarketScores();
+            } catch (Exception e) {
+                log.error("Failed to compute all market health scores during startup seeding", e);
+            }
+
+            try {
+                seasonalPatternService.computeAllPatterns();
+            } catch (Exception e) {
+                log.error("Failed to compute all seasonal patterns during startup seeding", e);
+            }
+            log.info("Recomputation process finished.");
+        } else {
+            log.info("Startup recomputation is disabled via configuration.");
+        }
     }
 
     protected void seedAdminUser() {
@@ -199,22 +219,27 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
+    /**
+     * Generates massive historical price records using raw JDBC batch inserts.
+     * Each batch gets its own connection from the pool, making this resilient
+     * to connection timeouts on remote databases (e.g. Render free-tier).
+     */
     private void generateMassivePriceRecords() {
-        // Find existing data
-        Map<String, City> cityMap = new HashMap<>();
-        cityRepository.findAll().forEach(c -> cityMap.put(c.getName(), c));
-        
+        // Load reference data using JPA (small queries, fast)
         List<Market> allMarkets = marketRepository.findAll();
         List<Commodity> allCommodities = commodityRepository.findAll();
+        User admin = userRepository.findByUsername(adminUsername).orElse(null);
+
+        if (admin == null) {
+            log.warn("Admin user not found. Skipping price record seeding.");
+            return;
+        }
 
         Random random = new Random();
-        User admin = userRepository.findByUsername(adminUsername).orElse(null);
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusMonths(12);
 
-        log.info("Generating MASSIVE historical price records (Daily for 12 months)...");
-        List<PriceRecord> batch = new ArrayList<>();
-        int count = 0;
+        log.info("Generating MASSIVE historical price records (Daily for 12 months) using JDBC batch inserts...");
 
         // Base price map for commodities
         Map<String, double[]> basePrices = new HashMap<>();
@@ -239,10 +264,19 @@ public class DataSeeder implements CommandLineRunner {
         basePrices.put("Pineapple", new double[]{60, 150});
         basePrices.put("Mango", new double[]{80, 200});
 
+        // Collect all records as raw data tuples (avoid holding JPA entities in memory)
+        List<Object[]> batch = new ArrayList<>();
+        int totalCount = 0;
+        Long adminId = admin.getId();
+
+        String insertSql = "INSERT INTO price_records (commodity_id, market_id, price, recorded_date, status, submitted_by) "
+                         + "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING";
+
         for (Commodity comm : allCommodities) {
             double[] range = basePrices.getOrDefault(comm.getName(), new double[]{100, 500});
             double min = range[0];
             double max = range[1];
+            Long commId = comm.getId();
 
             for (Market mkt : allMarkets) {
                 if (random.nextDouble() > 0.95) continue;
@@ -250,6 +284,7 @@ public class DataSeeder implements CommandLineRunner {
                 double cityMultiplier = 0.9 + (random.nextDouble() * 0.4);
                 LocalDate current = startDate;
                 double lastPrice = min + (random.nextDouble() * (max - min));
+                Long mktId = mkt.getId();
 
                 while (current.isBefore(endDate) || current.isEqual(endDate)) {
                     double seasonalFactor = 1.0;
@@ -264,25 +299,19 @@ public class DataSeeder implements CommandLineRunner {
                     price = Math.max(min * 0.6, Math.min(max * 1.8, price));
                     lastPrice = price;
 
-                    batch.add(PriceRecord.builder()
-                            .commodity(comm)
-                            .market(mkt)
-                            .price(BigDecimal.valueOf(price).setScale(2, RoundingMode.HALF_UP))
-                            .recordedDate(current)
-                            .status(com.ghana.commoditymonitor.enums.PriceRecordStatus.APPROVED)
-                            .submittedBy(admin)
-                            .build());
+                    batch.add(new Object[]{
+                        commId, mktId,
+                        BigDecimal.valueOf(price).setScale(2, RoundingMode.HALF_UP),
+                        Date.valueOf(current),
+                        PriceRecordStatus.APPROVED.name(),
+                        adminId
+                    });
                     
-                    if (batch.size() >= 5000) {
-                        final List<PriceRecord> toSave = new ArrayList<>(batch);
-                        transactionTemplate.execute(status -> {
-                            priceRecordRepository.saveAll(toSave);
-                            entityManager.flush();
-                            entityManager.clear();
-                            return null;
-                        });
-                        count += toSave.size();
-                        log.info("Saved {} price records so far...", count);
+                    if (batch.size() >= JDBC_BATCH_SIZE) {
+                        totalCount += flushBatchWithRetry(insertSql, batch);
+                        if (totalCount % 5000 == 0) {
+                            log.info("Saved {} price records so far...", totalCount);
+                        }
                         batch.clear();
                     }
 
@@ -291,17 +320,61 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
 
+        // Flush remaining
         if (!batch.isEmpty()) {
-            final List<PriceRecord> lastBatch = batch;
-            transactionTemplate.execute(status -> {
-                priceRecordRepository.saveAll(lastBatch);
-                entityManager.flush();
-                entityManager.clear();
-                return null;
-            });
-            count += lastBatch.size();
+            totalCount += flushBatchWithRetry(insertSql, batch);
+            batch.clear();
         }
 
-        log.info("Saved total of {} new price records.", count);
+        log.info("Saved total of {} new price records.", totalCount);
+    }
+
+    /**
+     * Flushes a batch of records via JDBC with a fresh connection.
+     * Retries once on failure to handle transient connection issues.
+     */
+    private int flushBatchWithRetry(String sql, List<Object[]> batch) {
+        int maxRetries = 2;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return flushBatch(sql, batch);
+            } catch (SQLException e) {
+                log.warn("Batch insert attempt {}/{} failed: {}. {}", 
+                    attempt, maxRetries, e.getMessage(),
+                    attempt < maxRetries ? "Retrying..." : "Giving up this batch.");
+                if (attempt == maxRetries) {
+                    log.error("Failed to insert batch of {} records after {} attempts", batch.size(), maxRetries);
+                }
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Executes a JDBC batch insert using a fresh connection from the pool.
+     * The connection is obtained and returned per-batch, preventing long-held connections
+     * from timing out on remote databases.
+     */
+    private int flushBatch(String sql, List<Object[]> batch) throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                for (Object[] row : batch) {
+                    ps.setLong(1, (Long) row[0]);       // commodity_id
+                    ps.setLong(2, (Long) row[1]);       // market_id
+                    ps.setBigDecimal(3, (BigDecimal) row[2]); // price
+                    ps.setDate(4, (Date) row[3]);       // recorded_date
+                    ps.setString(5, (String) row[4]);   // status
+                    ps.setLong(6, (Long) row[5]);       // submitted_by_id
+                    ps.addBatch();
+                }
+                int[] results = ps.executeBatch();
+                conn.commit();
+                return results.length;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
     }
 }

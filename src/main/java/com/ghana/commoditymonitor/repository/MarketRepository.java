@@ -15,4 +15,9 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
     List<Market> findByCityId(Long cityId);
 
     List<Market> findByCityName(String cityName);
+    
+    boolean existsByName(String name);
+    
+    @org.springframework.data.jpa.repository.Query("SELECT m.id FROM Market m")
+    List<Long> findAllIds();
 }
