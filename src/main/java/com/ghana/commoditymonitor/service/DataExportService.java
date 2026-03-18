@@ -102,14 +102,14 @@ public class DataExportService {
         List<Predicate> predicates = new ArrayList<>();
         predicates.add(cb.equal(root.get("status"), com.ghana.commoditymonitor.enums.PriceRecordStatus.APPROVED));
 
-        if (dto.commodityId() != null) {
-            predicates.add(cb.equal(root.get("commodity").get("id"), dto.commodityId()));
+        if (dto.commodityIds() != null && !dto.commodityIds().isEmpty()) {
+            predicates.add(root.get("commodity").get("id").in(dto.commodityIds()));
         }
-        if (dto.marketId() != null) {
-            predicates.add(cb.equal(root.get("market").get("id"), dto.marketId()));
+        if (dto.marketIds() != null && !dto.marketIds().isEmpty()) {
+            predicates.add(root.get("market").get("id").in(dto.marketIds()));
         }
-        if (dto.cityId() != null) {
-            predicates.add(cb.equal(root.get("market").get("city").get("id"), dto.cityId()));
+        if (dto.cityIds() != null && !dto.cityIds().isEmpty()) {
+            predicates.add(root.get("market").get("city").get("id").in(dto.cityIds()));
         }
         if (dto.fromDate() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("recordedDate"), dto.fromDate()));
@@ -353,9 +353,9 @@ public class DataExportService {
             User user = userRepository.findByUsername(principal.username()).orElse(null);
 
             String filtersJson = objectMapper.writeValueAsString(Map.of(
-                "commodityId", dto.commodityId() != null ? dto.commodityId() : "null",
-                "marketId", dto.marketId() != null ? dto.marketId() : "null",
-                "cityId", dto.cityId() != null ? dto.cityId() : "null",
+                "commodityIds", dto.commodityIds() != null ? dto.commodityIds() : "null",
+                "marketIds", dto.marketIds() != null ? dto.marketIds() : "null",
+                "cityIds", dto.cityIds() != null ? dto.cityIds() : "null",
                 "fromDate", dto.fromDate() != null ? dto.fromDate().toString() : "null",
                 "toDate", dto.toDate() != null ? dto.toDate().toString() : "null",
                 "includeAnalyticsSummary", dto.includeAnalyticsSummary()
