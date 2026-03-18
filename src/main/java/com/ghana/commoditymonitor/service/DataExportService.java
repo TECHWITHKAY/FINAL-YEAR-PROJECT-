@@ -17,7 +17,7 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -172,7 +172,8 @@ public class DataExportService {
     }
 
     private byte[] generateExcel(List<PriceRecord> records, boolean includeAnalytics) {
-        try (XSSFWorkbook workbook = new XSSFWorkbook();
+        try (XSSFWorkbook xssfWorkbook = new XSSFWorkbook();
+             SXSSFWorkbook workbook = new SXSSFWorkbook(xssfWorkbook, 100);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             createPriceRecordsSheet(workbook, records);
@@ -190,7 +191,7 @@ public class DataExportService {
         }
     }
 
-    private void createPriceRecordsSheet(XSSFWorkbook workbook, List<PriceRecord> records) {
+    private void createPriceRecordsSheet(Workbook workbook, List<PriceRecord> records) {
         Sheet sheet = workbook.createSheet("Price Records");
 
         CellStyle headerStyle = createHeaderStyle(workbook);
@@ -212,9 +213,10 @@ public class DataExportService {
         for (PriceRecord record : records) {
             Row row = sheet.createRow(rowNum);
 
-            if (rowNum % 2 == 0) {
-                for (int i = 0; i < headers.length; i++) {
-                    row.createCell(i).setCellStyle(evenRowStyle);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = row.createCell(i);
+                if (rowNum % 2 == 0) {
+                    cell.setCellStyle(evenRowStyle);
                 }
             }
 
@@ -239,17 +241,17 @@ public class DataExportService {
             rowNum++;
         }
 
+        // Note: autoSizeColumn is very expensive on SXSSF and requires trackAllColumnsForAutoSizing
+        // For performance on large sets, we'll skip it or use fixed widths if preferred.
+        // ((SXSSFSheet)sheet).trackAllColumnsForAutoSizing(); 
         for (int i = 0; i < headers.length; i++) {
-            sheet.autoSizeColumn(i);
-            if (sheet.getColumnWidth(i) > 50 * 256) {
-                sheet.setColumnWidth(i, 50 * 256);
-            }
+            sheet.setColumnWidth(i, 15 * 256);
         }
 
         sheet.createFreezePane(0, 1);
     }
 
-    private void createMonthlySummarySheet(XSSFWorkbook workbook, List<PriceRecord> records) {
+    private void createMonthlySummarySheet(Workbook workbook, List<PriceRecord> records) {
         Sheet sheet = workbook.createSheet("Monthly Summary");
 
         CellStyle headerStyle = createHeaderStyle(workbook);
@@ -307,7 +309,7 @@ public class DataExportService {
         sheet.createFreezePane(0, 1);
     }
 
-    private CellStyle createHeaderStyle(XSSFWorkbook workbook) {
+    private CellStyle createHeaderStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setFillForegroundColor(IndexedColors.DARK_GREEN.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -326,21 +328,21 @@ public class DataExportService {
         return style;
     }
 
-    private CellStyle createEvenRowStyle(XSSFWorkbook workbook) {
+    private CellStyle createEvenRowStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         return style;
     }
 
-    private CellStyle createCurrencyStyle(XSSFWorkbook workbook) {
+    private CellStyle createCurrencyStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         DataFormat format = workbook.createDataFormat();
         style.setDataFormat(format.getFormat("#,##0.00"));
         return style;
     }
 
-    private CellStyle createDateStyle(XSSFWorkbook workbook) {
+    private CellStyle createDateStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         DataFormat format = workbook.createDataFormat();
         style.setDataFormat(format.getFormat("dd-mmm-yyyy"));
