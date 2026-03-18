@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>New Field Agent Application</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+        <h2 style="color: #d32f2f;">Action Required: New Agent Application</h2>
+        <p>A new user has applied for a Field Agent account on CommodityGH.</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 150px;">Username:</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;" th:text="${agentUsername}">username</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Email:</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;" th:text="${agentEmail}">email@example.com</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Operating City:</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;" th:text="${operatingCity}">Accra</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Application Note:</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;" th:text="${applicationNote}">I am ready to help.</td>
+            </tr>
+        </table>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a th:href="${adminLink}" 
+               style="background-color: #1976d2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+               Review Application in Admin Dashboard
+            </a>
+        </div>
+    </div>
+</body>
+</html>

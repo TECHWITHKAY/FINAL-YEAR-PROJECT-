@@ -17,6 +17,13 @@ spring:
       connection-timeout: 30000   # 30 seconds
       idle-timeout: 300000        # 5 minutes
 
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 5
+        queue-capacity: 100
+
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -35,16 +42,19 @@ spring:
         order_inserts: true
 
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    host: smtp-relay.brevo.com
+    port: 587
+    username: a54ced001@smtp-brevo.com
+    password: ${BREVO_SMTP_PASSWORD}
+    test-connection: false
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
+        debug: false
 
 jwt:
   secret: ${JWT_SECRET:secretKeyForDevelopmentOnlyValueMustBeLongerThan256Bits}
@@ -64,7 +74,11 @@ app:
     password: ${ADMIN_PASSWORD}
     email: ${ADMIN_EMAIL:admin@commoditygh.com}
   mail:
-    enabled: ${MAIL_ENABLED:false}
+    enabled: ${MAIL_ENABLED:true}
+    from-address: mawulegabriel@gmail.com
+    from-name: CommodityGH
+  reset-token:
+    expiry-hours: 1
   seed:
     recompute-on-startup: true
   frontend:

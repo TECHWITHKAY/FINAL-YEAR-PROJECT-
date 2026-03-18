@@ -40,6 +40,7 @@ public class SecurityConfig {
                                          "/v3/api-docs/**", "/swagger-resources/**").permitAll()
 
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/forgot-password", "/api/v1/auth/reset-password/**", "/api/v1/auth/register-agent").permitAll()
                         .requestMatchers("/api/v1/public/**").permitAll()
                         .requestMatchers("/api/v1/health/**").permitAll()
                         .requestMatchers("/api/v1/seasonal/**").permitAll()

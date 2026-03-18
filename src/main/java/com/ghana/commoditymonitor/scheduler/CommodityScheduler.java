@@ -6,6 +6,7 @@ import com.ghana.commoditymonitor.repository.ExportLogRepository;
 import com.ghana.commoditymonitor.repository.MarketHealthScoreRepository;
 import com.ghana.commoditymonitor.repository.PriceRecordRepository;
 import com.ghana.commoditymonitor.service.MarketHealthScoreService;
+import com.ghana.commoditymonitor.service.PasswordResetService;
 import com.ghana.commoditymonitor.service.SeasonalPatternService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.List;
 public class CommodityScheduler {
 
     private final MarketHealthScoreService marketHealthScoreService;
+    private final PasswordResetService passwordResetService;
     private final SeasonalPatternService seasonalPatternService;
     private final MarketHealthScoreRepository marketHealthScoreRepository;
     private final PriceRecordRepository priceRecordRepository;
@@ -107,5 +109,11 @@ public class CommodityScheduler {
         long deletedCount = exportLogRepository.deleteByExportedAtBefore(cutoffDate);
         
         log.info("Cleaned up {} old export log entries", deletedCount);
+    }
+
+    @Scheduled(cron = "0 30 4 * * *")
+    public void cleanupExpiredResetTokens() {
+        log.info("Starting nightly cleanup of expired password reset tokens");
+        passwordResetService.cleanupExpiredTokens();
     }
 }

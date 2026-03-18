@@ -45,6 +45,12 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean active = true;
 
+    @Column(name = "operating_city", length = 100)
+    private String operatingCity;
+
+    @Column(name = "application_note", columnDefinition = "TEXT")
+    private String applicationNote;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

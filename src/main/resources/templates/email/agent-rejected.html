@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Application Update</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+        <h2 style="color: #d32f2f;">Update on Your Application</h2>
+        <p>Hello <strong th:text="${username}">User</strong>,</p>
+        <p>Thank you for applying to be a Field Agent for CommodityGH.</p>
+        <p>After careful review, we are unable to approve your request at this time for the following reason:</p>
+        
+        <div style="background-color: #fff9c4; padding: 15px; border-left: 5px solid #fbc02d; margin: 20px 0;">
+            <p style="margin: 0;" th:text="${reason}">Reason provided by admin.</p>
+        </div>
+        
+        <p>You can still use the platform as an Analyst to view commodity prices and trends. If you believe there has been an error, please contact us at <span th:text="${contactEmail}">support@example.com</span>.</p>
+        
+        <p>Thank you for your understanding.</p>
+        <p>Best regards,<br>The CommodityGH Team</p>
+    </div>
+</body>
+</html>
