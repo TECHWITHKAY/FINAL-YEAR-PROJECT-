@@ -43,7 +43,7 @@ spring:
 
   mail:
     host: smtp-relay.brevo.com
-    port: 587
+    port: 2525
     username: a54ced001@smtp-brevo.com
     password: ${BREVO_SMTP_PASSWORD}
     test-connection: false
@@ -83,3 +83,6 @@ app:
     recompute-on-startup: true
   frontend:
     base-url: ${FRONTEND_URL:http://localhost:5173}
+  scraper:
+    enabled: ${SCRAPER_ENABLED:true}
+    esoko-url: ${ESOKO_URL:https://marketplace.esoko.com/}

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository interface for Market entity.
@@ -17,6 +18,8 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
     List<Market> findByCityName(String cityName);
     
     boolean existsByName(String name);
+    
+    Optional<Market> findByNameIgnoreCase(String name);
     
     @org.springframework.data.jpa.repository.Query("SELECT m.id FROM Market m")
     List<Long> findAllIds();

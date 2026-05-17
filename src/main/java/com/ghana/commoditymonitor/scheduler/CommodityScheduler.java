@@ -8,6 +8,7 @@ import com.ghana.commoditymonitor.repository.PriceRecordRepository;
 import com.ghana.commoditymonitor.service.MarketHealthScoreService;
 import com.ghana.commoditymonitor.service.PasswordResetService;
 import com.ghana.commoditymonitor.service.SeasonalPatternService;
+import com.ghana.commoditymonitor.service.EsokoScraperService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
@@ -26,6 +27,7 @@ public class CommodityScheduler {
     private final MarketHealthScoreService marketHealthScoreService;
     private final PasswordResetService passwordResetService;
     private final SeasonalPatternService seasonalPatternService;
+    private final EsokoScraperService esokoScraperService;
     private final MarketHealthScoreRepository marketHealthScoreRepository;
     private final PriceRecordRepository priceRecordRepository;
     private final ExportLogRepository exportLogRepository;
@@ -115,5 +117,15 @@ public class CommodityScheduler {
     public void cleanupExpiredResetTokens() {
         log.info("Starting nightly cleanup of expired password reset tokens");
         passwordResetService.cleanupExpiredTokens();
+    }
+
+    @Scheduled(cron = "0 0 5 * * *")
+    public void runAutomatedPriceCollection() {
+        log.info("Starting scheduled Esoko price collection");
+        try {
+            esokoScraperService.runScrapingJob();
+        } catch (Exception e) {
+            log.error("Scheduled Esoko price collection failed", e);
+        }
     }
 }

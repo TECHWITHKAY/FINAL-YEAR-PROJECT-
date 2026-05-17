@@ -16,6 +16,8 @@ public interface CommodityRepository extends JpaRepository<Commodity, Long> {
     List<Commodity> findByCategory(String category);
 
     Optional<Commodity> findByName(String name);
+    
+    Optional<Commodity> findByNameIgnoreCase(String name);
 
     boolean existsByName(String name);
 
