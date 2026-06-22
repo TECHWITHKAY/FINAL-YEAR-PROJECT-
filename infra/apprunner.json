@@ -1,0 +1,52 @@
+{
+  "ServiceName": "commoditygh-backend",
+  "SourceConfiguration": {
+    "AuthenticationConfiguration": {
+      "AccessRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/apprunner-ecr-access"
+    },
+    "AutoDeploymentsEnabled": true,
+    "ImageRepository": {
+      "ImageIdentifier": "<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/commoditygh-backend:latest",
+      "ImageRepositoryType": "ECR",
+      "ImageConfiguration": {
+        "Port": "8080",
+        "RuntimeEnvironmentSecrets": {
+          "DB_URL": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/DB_URL",
+          "DB_USER": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/DB_USER",
+          "DB_PASSWORD": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/DB_PASSWORD",
+          "JWT_SECRET": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/JWT_SECRET",
+          "MAIL_HOST": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/MAIL_HOST",
+          "MAIL_USERNAME": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/MAIL_USERNAME",
+          "MAIL_PASSWORD": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/MAIL_PASSWORD",
+          "ADMIN_USERNAME": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/ADMIN_USERNAME",
+          "ADMIN_PASSWORD": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/ADMIN_PASSWORD",
+          "ADMIN_EMAIL": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/ADMIN_EMAIL",
+          "CORS_ALLOWED_ORIGINS": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/CORS_ALLOWED_ORIGINS",
+          "SPRING_PROFILES_ACTIVE": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/commoditygh/prod/SPRING_PROFILES_ACTIVE"
+        }
+      }
+    }
+  },
+  "InstanceConfiguration": {
+    "Cpu": "1 vCPU",
+    "Memory": "2 GB",
+    "InstanceRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/apprunner-instance-role"
+  },
+  "AutoScalingConfigurationArn": "PLACEHOLDER",
+  "HealthCheckConfiguration": {
+    "Protocol": "HTTP",
+    "Path": "/actuator/health",
+    "Interval": 10,
+    "Timeout": 5,
+    "HealthyThreshold": 1,
+    "UnhealthyThreshold": 3
+  },
+  "NetworkConfiguration": {
+    "EgressConfiguration": {
+      "EgressType": "VPC",
+      "VpcConnectorArn": "arn:aws:apprunner:<REGION>:<ACCOUNT_ID>:vpcconnector/commoditygh-vpc-connector"
+    }
+  },
+  "_comment_auto_scaling": "Create the auto-scaling config first: aws apprunner create-auto-scaling-configuration --auto-scaling-configuration-name commoditygh-scaling --min-size 1 --max-size 3 --max-concurrency 100, then replace AutoScalingConfigurationArn above with the returned ARN.",
+  "_comment_placeholders": "Replace <ACCOUNT_ID> and <REGION> with your actual AWS account ID and region (e.g., 123456789012 and us-east-1)."
+}

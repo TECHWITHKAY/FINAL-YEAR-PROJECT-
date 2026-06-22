@@ -7,12 +7,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Configuration for Cross-Origin Resource Sharing (CORS).
- * Allowed origins are externalized via application properties for profile-based control.
+ * Allowed origins are externalized via the {@code app.cors.allowed-origins} property,
+ * which defaults to {@code http://localhost:5173} for local development.
+ * In production, inject {@code CORS_ALLOWED_ORIGINS} via SSM / environment variable
+ * (e.g. {@code https://<cloudfront-domain>}).
+ * Multiple origins can be specified as a comma-separated list.
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
-    @Value("${cors.allowed-origins}")
+    @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
     @Override

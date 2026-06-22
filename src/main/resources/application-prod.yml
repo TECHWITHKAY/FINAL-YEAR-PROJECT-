@@ -1,2 +1,10 @@
-cors:
-  allowed-origins: "https://yourdomain.com"
+spring:
+  jpa:
+    show-sql: false
+  flyway:
+    out-of-order: false
+
+logging:
+  level:
+    root: WARN
+    com.ghana.commoditymonitor: INFO
